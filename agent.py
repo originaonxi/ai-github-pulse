@@ -70,8 +70,8 @@ def run():
 
     # ─── 2. DELTA FILTER ─────────────────────────────────────────
     print("\n  [2/6] Filtering already-featured repos...")
-    save_repos(all_repos)
-    new_repos = filter_new(all_repos)
+    new_repos = filter_new(all_repos)   # check first
+    save_repos(all_repos)               # then record all as seen
     print(f"  New (never featured): {len(new_repos)}")
 
     if not new_repos:

@@ -66,21 +66,26 @@ def select_top_repos(candidates: list[dict], qualified_count: int = 0) -> list[d
         for i, c in enumerate(candidates)
     ])
 
-    try:
-        text = _chat(
-            SELECTOR_SYSTEM,
-            f"Today's pre-scored AI repos ({len(candidates)} from {qualified_count} qualified):\n\n{candidate_list}\n\n"
-            f"Pick 1 to {max_pick} that every AI engineer MUST see today.\n"
-            f"Return ONLY a JSON array of numbers: [2, 5, 1]",
-            max_tokens=200,
-        )
-        m = re.search(r'\[[\d,\s]+\]', text)
-        indices = json.loads(m.group() if m else text)
-        selected = [candidates[i-1] for i in indices if 0 < i <= len(candidates)]
-        return selected[:max_pick]
-    except Exception as e:
-        print(f"  Selector error: {e}, using top 3 by score")
-        return candidates[:min(3, max_pick)]
+    for attempt in range(2):
+        try:
+            text = _chat(
+                SELECTOR_SYSTEM,
+                f"Today's pre-scored AI repos ({len(candidates)} from {qualified_count} qualified):\n\n{candidate_list}\n\n"
+                f"Pick 1 to {max_pick} must-see repos for AI engineers today.\n"
+                f"Return ONLY a JSON array like [2, 5, 1] — nothing else.",
+                max_tokens=200,
+            )
+            if not text:
+                continue
+            m = re.search(r'\[[\d,\s]+\]', text)
+            indices = json.loads(m.group() if m else text)
+            selected = [candidates[i-1] for i in indices if 0 < i <= len(candidates)]
+            if selected:
+                return selected[:max_pick]
+        except Exception as e:
+            print(f"  Selector attempt {attempt+1} error: {e}")
+    print("  Falling back to top 3 by score")
+    return candidates[:min(3, max_pick)]
 
 
 def write_repo_story(repo: dict, number: int) -> dict:

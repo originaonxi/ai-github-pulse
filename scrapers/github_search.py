@@ -11,9 +11,11 @@ from config import GITHUB_TOKEN, MIN_STARS
 BASE = "https://api.github.com"
 
 def _headers() -> dict:
+    import os
+    token = os.environ.get("GITHUB_TOKEN", GITHUB_TOKEN)
     h = {"Accept": "application/vnd.github+json", "User-Agent": "AIGithubPulse/1.0"}
-    if GITHUB_TOKEN:
-        h["Authorization"] = f"Bearer {GITHUB_TOKEN}"
+    if token:
+        h["Authorization"] = f"Bearer {token}"
     return h
 
 # Search queries targeting our exact topic set
