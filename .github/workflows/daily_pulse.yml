@@ -1,0 +1,45 @@
+name: Daily AI GitHub Pulse
+
+on:
+  schedule:
+    # 9:00 AM PST = 17:00 UTC daily (1 hour after AGI paper newsletter)
+    - cron: '0 17 * * *'
+  workflow_dispatch:
+
+jobs:
+  send-pulse:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repo (with DB)
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run pulse agent
+        env:
+          REQUESTY_API_KEY: ${{ secrets.REQUESTY_API_KEY }}
+          GITHUB_TOKEN:     ${{ secrets.GH_TOKEN }}
+          SMTP_USER:        ${{ secrets.SMTP_USER }}
+          SMTP_PASS:        ${{ secrets.SMTP_PASS }}
+          EMAIL_TO:         ${{ secrets.EMAIL_TO }}
+        run: python agent.py
+
+      - name: Save database back to repo
+        run: |
+          git config user.name "ai-pulse-bot"
+          git config user.email "bot@ai-github-pulse.dev"
+          git add pulse.db || true
+          git diff --cached --quiet || git commit -m "chore: update seen-repos database [skip ci]"
+          git push || true
